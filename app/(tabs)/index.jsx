@@ -3,7 +3,6 @@ import {
   StyleSheet,
   Text,
   View,
-  ScrollView,
   RefreshControl,
   Dimensions,
   FlatList,
@@ -16,64 +15,25 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   interpolateColor,
-  useAnimatedScrollHandler,
-  interpolate,
-  Extrapolate,
 } from "react-native-reanimated";
-import Svg, { Path } from "react-native-svg";
-import { TYPOGRAPHY } from "../../constants/typography";
+import { TYPOGRAPHY } from "@/constants/typography";
+import AppHeader from "@/components/AppHeader";
+import StockCard from "@/components/StockCard";
+import StockData from "@/constants/data.json"
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.5;
 
-//////////////////////////////////////////////////////////////////////////////////////
-// ✅ Stock Card Component (HOOKS MUST BE INSIDE COMPONENT)
-//////////////////////////////////////////////////////////////////////////////////////
 
-const StockCard = ({ item }) => {
-  const isPositive = item.change >= 0;
-
-  return (
-    <View style={styles.stockCard}>
-      {/* LEFT SIDE */}
-      <View style={{ flex: 1 }}>
-        {/* Change Pill */}
-        <View style={styles.pill}>
-          <Text
-            style={[
-              styles.pillText,
-              { color: isPositive ? "#16A34A" : "#DC2626" },
-            ]}
-          >
-            {isPositive ? "+" : ""}
-            {item.change.toFixed(2)}
-          </Text>
-        </View>
-
-        {/* Price */}
-        <Text style={styles.stockPrice}>
-          ${item.price.toLocaleString()}
-        </Text>
-
-        {/* Name */}
-        <Text style={styles.stockName}>{item.name}</Text>
-      </View>
-
-      {/* Floating Icon */}
-      <View style={styles.iconOuter}>
-        <View style={styles.iconWrapper}>
-          <Image source={{ uri: item.logo }} style={styles.logo} />
-        </View>
-      </View>
+  const SectionHeader = ({ title }) => (
+    <View style={styles.titleContainer}>
+      <Text style={styles.title}>{title}</Text>
     </View>
   );
-};
-//////////////////////////////////////////////////////////////////////////////////////
-// ✅ MAIN SCREEN
-//////////////////////////////////////////////////////////////////////////////////////
 
 export default function Index() {
-  const [refreshing, setRefreshing] = useState(false);
+  const topGainers = StockData.data.filter(s => s.change > 0);
+  const topLosers = StockData.data.filter(s => s.change < 0);
 
   const currentValue = 433321;
   const investedAmount = 360549;
@@ -101,129 +61,103 @@ export default function Index() {
   const formatCurrency = (num) =>
     "₹" + Math.abs(Math.round(num)).toLocaleString("en-IN");
 
-  // ===== Pull To Refresh =====
-  const onRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      animatedValue.value = withSpring(
-        Math.random() > 0.5 ? pnl + 5000 : pnl - 5000
-      );
-      setRefreshing(false);
-    }, 1500);
-  };
-
-  // ===== Scroll Animation Value =====
-  const scrollX = useSharedValue(0);
-
-  const scrollHandler = useAnimatedScrollHandler((event) => {
-    scrollX.value = event.contentOffset.x;
-  });
-
-  const stockData = [
-    {
-      id: "1",
-      name: "Apple",
-      price: 172.32,
-      change: 2.45,
-      logo: "https://logo.clearbit.com/apple.com",
-    },
-    {
-      id: "2",
-      name: "Tesla",
-      price: 245.91,
-      change: -1.12,
-      logo: "https://logo.clearbit.com/tesla.com",
-    },
-    {
-      id: "3",
-      name: "Google",
-      price: 132.88,
-      change: 4.25,
-      logo: "https://logo.clearbit.com/google.com",
-    },
-  ];
-
-  const chartPath =
-    "M0 80 Q 40 60 80 70 T 160 50 T 240 60 T 320 30 T 400 50";
+ 
 
   return (
     <LinearGradient
       colors={["#F9FAFB", "#F3F4F6"]}
       style={{ flex: 1 }}
     >
-      <ScrollView
-        contentContainerStyle={{ marginTop: 20 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={{ paddingHorizontal:20 }}>
-          {/* ===== Glass Card ===== */}
-          <BlurView intensity={60} tint="dark" style={styles.glassCard}>
-            <Text style={styles.label}>Current Value</Text>
-
-            <Text style={styles.currentValue}>
-              ₹{currentValue.toLocaleString("en-IN")}
-            </Text>
-
-            <View style={styles.divider} />
-
-            <View style={styles.row}>
-              <View>
-                <Text style={styles.subLabel}>Invested Amount</Text>
-                <Text style={styles.invested}>
-                  ₹{investedAmount.toLocaleString("en-IN")}
+      <AppHeader
+        onSearchPress={() => console.log("Search")}
+        onBellPress={() => console.log("Bell")}
+      />
+      <Animated.FlatList
+        data={StockData.data}
+        keyExtractor={(item) => item.symbol}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        
+        ListHeaderComponent={
+          <>
+            {/* SUMMARY */}
+            <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+              <BlurView intensity={90} tint="dark" style={styles.glassCard}>
+                <Text style={styles.label}>Current Value</Text>
+                <Text style={styles.currentValue}>
+                  ₹{currentValue.toLocaleString("en-IN")}
                 </Text>
-              </View>
 
-              <View style={{ alignItems: "flex-end" }}>
-                <Text style={styles.subLabel}>Total P&amp;L</Text>
+                <View style={styles.divider} />
 
-                <Animated.Text
-                  style={[styles.profit, animatedColor]}
-                >
-                  {isProfit ? "+" : "-"}
-                  {formatCurrency(animatedValue.value)} (
-                  {isProfit ? "+" : "-"}
-                  {Math.abs(pnlPercent)}%)
-                </Animated.Text>
-              </View>
+                <View style={styles.row}>
+                  <View>
+                    <Text style={styles.subLabel}>Invested Amount</Text>
+                    <Text style={styles.invested}>
+                      ₹{investedAmount.toLocaleString("en-IN")}
+                    </Text>
+                  </View>
+
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={styles.subLabel}>Total P&amp;L</Text>
+                    <Animated.Text style={[styles.profit, animatedColor]}>
+                      {isProfit ? "+" : "-"}
+                      {formatCurrency(animatedValue.value)} (
+                      {isProfit ? "+" : "-"}
+                      {Math.abs(pnlPercent)}%)
+                    </Animated.Text>
+                  </View>
+                </View>
+              </BlurView>
             </View>
-          </BlurView>
 
-          {/* ===== Chart ===== */}
-          <View style={{ marginTop: 30 }}>
-            <Svg height="120" width={width - 40}>
-              <Path
-                d={chartPath}
-                stroke={isProfit ? "#1DB954" : "#D32F2F"}
-                strokeWidth="3"
-                fill="none"
+            {/* TOP GAINER */}
+            <View style={{marginTop:30}}>
+              <SectionHeader title="Top Gainer" />
+              <FlatList
+                data={topGainers}
+                horizontal
+                keyExtractor={(item) => item.symbol}
+                renderItem={({ item }) => (
+                  <StockCard item={item} CARD_WIDTH={CARD_WIDTH} />
+                )}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{marginBottom: 20, paddingHorizontal: 20, gap: 18 }}
               />
-            </Svg>
-          </View>
-        </View>
+            </View>
 
-        {/* ===== Horizontal Stocks ===== */}
-        <Animated.FlatList
-          data={stockData}
-          horizontal
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <StockCard
-              item={item}
-              index={index}
-              scrollX={scrollX}
-            />
-          )}
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={CARD_WIDTH + 16}
-          decelerationRate="fast"
-          onScroll={scrollHandler}
-          scrollEventThrottle={16}
-          contentContainerStyle={{ marginVertical: 30, paddingHorizontal: 20, gap:18 }}
+            {/* TOP LOSER */}
+            <View style={{marginTop:20}}>
+              <SectionHeader title="Top Loser" />
+              <FlatList
+                data={topLosers}
+                horizontal
+                keyExtractor={(item) => item.symbol}
+                renderItem={({ item }) => (
+                  <StockCard item={item} CARD_WIDTH={CARD_WIDTH} />
+                )}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ marginBottom:20, paddingHorizontal: 20, gap: 18 }}
+              />
+            </View>
+
+            <View style={{marginTop:20}}>
+              <SectionHeader title="All Stocks" />
+            </View>
+          </>
+        }
+
+        renderItem={({ item }) => (
+          <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+            <StockCard item={item} CARD_WIDTH={width - 40} />
+          </View>
+        )}
+        ListFooterComponent={
+            <View style={{marginTop:20}}>
+              <SectionHeader title="Test Component" />
+            </View>
+          }
         />
-      </ScrollView>
     </LinearGradient>
   );
 }
@@ -279,8 +213,14 @@ const styles = StyleSheet.create({
   profit: {
     ...TYPOGRAPHY.h5,
     marginTop: 4,
+  }, 
+  titleContainer:{
+    paddingHorizontal:20,
+    marginBottom:20
   },
-
+  title:{
+    ...TYPOGRAPHY.h5,
+  },
   stockCard: {
     width: CARD_WIDTH,
     backgroundColor: "#FFFFFF",
